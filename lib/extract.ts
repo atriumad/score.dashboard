@@ -1,4 +1,10 @@
-import type { CareerApplication, GFEntry } from "./types"
+import type {
+  CareerApplication,
+  ContactMessage,
+  EventRequest,
+  GFEntry,
+  Subscriber,
+} from "./types"
 
 /**
  * Static label map for the Career Form (form 3). The GF REST API returns
@@ -85,4 +91,48 @@ export function collectFields(entry: GFEntry, excluded: string[] = ["6"]): { lab
   }
 
   return fields
+}
+
+/**
+ * Event Request Form. Field ids match docs/wordpress/event-request-form.json;
+ * if the form is rebuilt by hand with other ids, update them here.
+ */
+export function buildEventRequest(entry: GFEntry): EventRequest {
+  const guests = Number.parseInt(fieldValue(entry, "8"), 10)
+  return {
+    entry,
+    name: [fieldValue(entry, "1.3"), fieldValue(entry, "1.6")]
+      .filter(Boolean)
+      .join(" ")
+      .trim(),
+    email: fieldValue(entry, "2"),
+    phone: fieldValue(entry, "3"),
+    company: fieldValue(entry, "4"),
+    eventType: fieldValue(entry, "5"),
+    eventDate: fieldValue(entry, "6"),
+    eventTime: fieldValue(entry, "7"),
+    guests: Number.isFinite(guests) ? guests : null,
+    packageName: fieldValue(entry, "9"),
+    details: fieldValue(entry, "10"),
+  }
+}
+
+/** Contact Form (form 2). */
+export function buildContactMessage(entry: GFEntry): ContactMessage {
+  return {
+    entry,
+    name: [fieldValue(entry, "1.3"), fieldValue(entry, "1.6")]
+      .filter(Boolean)
+      .join(" ")
+      .trim(),
+    email: fieldValue(entry, "2"),
+    phone: fieldValue(entry, "4"),
+    message: fieldValue(entry, "3"),
+    optIn: fieldValue(entry, "5.1").trim() !== "",
+  }
+}
+
+/** Newsletter (form 1). */
+export function buildSubscriber(entry: GFEntry): Subscriber {
+  return { entry, email: fieldValue(entry, "1") }
 }

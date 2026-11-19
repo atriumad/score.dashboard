@@ -80,7 +80,7 @@ export function StatsCards({
   )
 }
 
-function StatCard({
+export function StatCard({
   icon: Icon,
   label,
   value,

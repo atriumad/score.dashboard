@@ -1,11 +1,22 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
 import { LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { SECTIONS } from "@/lib/forms"
+import { cn } from "cn"
 
-export function Header({ title }: { title?: string }) {
+function isActive(pathname: string, href: string): boolean {
+  if (href === "/") {
+    return pathname === "/" || pathname.startsWith("/applications")
+  }
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
+
+export function Header() {
   const router = useRouter()
+  const pathname = usePathname()
 
   async function handleLogout() {
     await fetch("/api/auth", { method: "DELETE" })
@@ -14,21 +25,11 @@ export function Header({ title }: { title?: string }) {
   }
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-white/10 bg-navy px-4 text-white sm:px-6">
-      <div className="flex min-w-0 items-center gap-3">
-        <span className="text-sm font-bold tracking-[0.22em] text-white uppercase">
+    <header className="sticky top-0 z-10 border-b border-white/10 bg-navy text-white">
+      <div className="flex h-14 items-center justify-between gap-3 px-4 sm:px-6">
+        <span className="shrink-0 text-sm font-bold tracking-[0.22em] text-white uppercase">
           Score<span className="text-gold">USA</span>
         </span>
-        {title && (
-          <>
-            <span className="h-5 w-px shrink-0 bg-white/25" aria-hidden />
-            <span className="truncate text-sm font-medium tracking-[0.18em] text-white/90 uppercase">
-              {title}
-            </span>
-          </>
-        )}
-      </div>
-      <div className="flex items-center gap-3">
         <Button
           variant="ghost"
           size="sm"
@@ -39,7 +40,29 @@ export function Header({ title }: { title?: string }) {
           Log out
         </Button>
       </div>
-      
+      <nav
+        aria-label="Sections"
+        className="flex gap-1 overflow-x-auto px-2 sm:px-4"
+      >
+        {SECTIONS.map((section) => {
+          const active = isActive(pathname, section.href)
+          return (
+            <Link
+              key={section.key}
+              href={section.href}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "shrink-0 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors",
+                active
+                  ? "border-gold text-white"
+                  : "border-transparent text-white/65 hover:text-white"
+              )}
+            >
+              {section.label}
+            </Link>
+          )
+        })}
+      </nav>
     </header>
   )
 }

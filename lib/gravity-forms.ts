@@ -10,7 +10,6 @@ export interface GFEntryListResponse {
 const GF_URL = process.env.GF_API_URL
 const GF_KEY = process.env.GF_CONSUMER_KEY
 const GF_SECRET = process.env.GF_CONSUMER_SECRET
-const GF_FORM_ID = process.env.GF_FORM_ID
 const PAGE_SIZE = 200
 
 // RFC 3986 strict percent-encoding (as required by OAuth 1.0a)
@@ -103,12 +102,7 @@ async function gfFetch(
   return res
 }
 
-export async function getEntries(): Promise<GFEntry[]> {
-  if (!GF_FORM_ID) {
-    throw new Error("Falta la variable de entorno GF_FORM_ID")
-  }
-
-  const formId = GF_FORM_ID
+export async function getEntries(formId: string): Promise<GFEntry[]> {
 
   // The API caps what one request returns, so read every page.
   return collectPages(async (page) => {
@@ -128,12 +122,20 @@ export async function getEntries(): Promise<GFEntry[]> {
   }, PAGE_SIZE)
 }
 
-export async function getEntry(id: string): Promise<GFEntry> {
+/**
+ * One entry, only if it belongs to `formId`. Entry ids are global across
+ * forms, so without this check /events/123 could show a job application.
+ */
+export async function getEntry(id: string, formId: string): Promise<GFEntry> {
   // Single-entry route is /entries/{id} (not /forms/{formId}/entries/{id});
   // the latter doesn't exist in this GF REST API version.
   const res = await gfFetch(`/entries/${id}`, "_labels=1")
   if (!res.ok) {
     throw new Error(`Gravity Forms API error: ${res.status}`)
   }
-  return res.json() as Promise<GFEntry>
+  const entry = (await res.json()) as GFEntry
+  if (String(entry.form_id) !== formId) {
+    throw new Error("Gravity Forms API error: 404")
+  }
+  return entry
 }

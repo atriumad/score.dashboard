@@ -1,6 +1,10 @@
-import { normalizeHiringStage, type HiringStage } from "./stages"
+import { normalizeStage, type PipelineKind, type Stage } from "./stages"
 
-const STATUS_KEY = "job_statuses"
+// One Redis hash per pipeline, keyed by entry id.
+const STATUS_KEYS: Record<PipelineKind, string> = {
+  hiring: "job_statuses",
+  events: "event_statuses",
+}
 
 function redisEndpoint(): { url: string; token: string } {
   const url =
@@ -39,27 +43,30 @@ async function redis(command: (string | number)[]): Promise<unknown> {
 
 // Stored values may predate the stage pipeline; they are translated on read
 // and never rewritten, so nothing saved by the old dashboard is lost.
-export async function getStatuses(): Promise<Record<string, HiringStage>> {
-  const result = await redis(["HGETALL", STATUS_KEY])
-  const out: Record<string, HiringStage> = {}
+export async function getStatuses(
+  kind: PipelineKind
+): Promise<Record<string, Stage>> {
+  const result = await redis(["HGETALL", STATUS_KEYS[kind]])
+  const out: Record<string, Stage> = {}
   if (result == null) {
     return out
   }
   if (Array.isArray(result)) {
     for (let i = 0; i + 1 < result.length; i += 2) {
-      out[String(result[i])] = normalizeHiringStage(String(result[i + 1]))
+      out[String(result[i])] = normalizeStage(kind, String(result[i + 1]))
     }
   } else if (typeof result === "object") {
     for (const [k, v] of Object.entries(result as Record<string, unknown>)) {
-      out[k] = normalizeHiringStage(typeof v === "string" ? v : null)
+      out[k] = normalizeStage(kind, typeof v === "string" ? v : null)
     }
   }
   return out
 }
 
 export async function setStatus(
+  kind: PipelineKind,
   entryId: string,
-  stage: HiringStage
+  stage: Stage
 ): Promise<void> {
-  await redis(["HSET", STATUS_KEY, entryId, stage])
+  await redis(["HSET", STATUS_KEYS[kind], entryId, stage])
 }

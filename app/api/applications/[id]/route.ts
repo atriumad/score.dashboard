@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getEntry } from "@/lib/gravity-forms"
 import { requireAuth } from "@/lib/auth"
 import { buildCareerApplication, collectFields } from "@/lib/extract"
+import { formIdFor } from "@/lib/forms"
 
 export async function GET(
   _request: NextRequest,
@@ -14,7 +15,9 @@ export async function GET(
 
   const { id } = await params
   try {
-    const entry = await getEntry(id)
+    const formId = formIdFor("hiring")
+    if (!formId) throw new Error("Falta la variable de entorno GF_FORM_ID")
+    const entry = await getEntry(id, formId)
     const application = buildCareerApplication(entry)
     const fields = collectFields(entry)
 

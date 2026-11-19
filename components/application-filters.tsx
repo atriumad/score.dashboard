@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react"
 import { Search, Users } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
 import {
   Select,
   SelectContent,
@@ -12,24 +11,21 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import type { CareerApplication } from "@/lib/types"
-import { countByStage, type HiringStage } from "@/lib/stages"
+import { countByStage, type Stage } from "@/lib/stages"
 import { ApplicationTable } from "@/components/application-table"
 import { StageSummary } from "@/components/stage-summary"
-
-// Rows rendered at a time. Every row carries a stage picker, so drawing
-// several hundred at once makes the page slow to load and to scroll.
-const PAGE = 50
+import { PAGE, ShowMore } from "@/components/show-more"
 
 export function ApplicationFilters({
   applications,
   statuses,
 }: {
   applications: CareerApplication[]
-  statuses: Record<string, HiringStage>
+  statuses: Record<string, Stage>
 }) {
   const [query, setQuery] = useState("")
   const [area, setArea] = useState<string>("all")
-  const [stage, setStage] = useState<HiringStage | null>(null)
+  const [stage, setStage] = useState<Stage | null>(null)
   // Live copy of the stage map so counts follow changes made in the table.
   const [stages, setStages] = useState(statuses)
   const [limit, setLimit] = useState(PAGE)
@@ -59,6 +55,7 @@ export function ApplicationFilters({
   const counts = useMemo(
     () =>
       countByStage(
+        "hiring",
         matching.map((app) => String(app.entry.id)),
         stages
       ),
@@ -77,7 +74,9 @@ export function ApplicationFilters({
 
   return (
     <div className="space-y-4">
-      <StageSummary counts={counts} active={stage} onSelect={(next) => {
+      <StageSummary
+        kind="hiring"
+        counts={counts} active={stage} onSelect={(next) => {
           setStage(next)
           setLimit(PAGE)
         }}
@@ -134,16 +133,11 @@ export function ApplicationFilters({
         }
       />
 
-      {filtered.length > limit && (
-        <div className="flex flex-col items-center gap-2">
-          <p className="text-xs text-muted-foreground">
-            Showing {limit} of {filtered.length}
-          </p>
-          <Button variant="outline" onClick={() => setLimit(limit + PAGE)}>
-            Show more
-          </Button>
-        </div>
-      )}
+      <ShowMore
+        shown={Math.min(limit, filtered.length)}
+        total={filtered.length}
+        onMore={() => setLimit(limit + PAGE)}
+      />
     </div>
   )
 }

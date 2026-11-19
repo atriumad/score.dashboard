@@ -10,30 +10,33 @@ import {
 } from "@/components/ui/select"
 import { StageDot } from "@/components/stage-dot"
 import {
-  HIRING_STAGES,
-  HIRING_STAGE_LABELS,
-  isHiringStage,
-  type HiringStage,
+  PIPELINES,
+  STAGE_LABELS,
+  isStage,
+  type PipelineKind,
+  type Stage,
 } from "@/lib/stages"
 
 export function StagePicker({
+  kind,
   entryId,
   value,
   onStageChange,
 }: {
+  kind: PipelineKind
   entryId: string
-  value: HiringStage
-  onStageChange?: (stage: HiringStage) => void
+  value: Stage
+  onStageChange?: (stage: Stage) => void
 }) {
-  const [stage, setStage] = useState<HiringStage>(value)
+  const [stage, setStage] = useState<Stage>(value)
   const [saving, setSaving] = useState(false)
 
   async function handleChange(next: string | null) {
-    if (!isHiringStage(next) || next === stage) return
+    if (!isStage(kind, next) || next === stage) return
     const previous = stage
 
     // Optimistic: show the new stage now, put it back if the save fails.
-    function apply(s: HiringStage) {
+    function apply(s: Stage) {
       setStage(s)
       onStageChange?.(s)
     }
@@ -44,7 +47,7 @@ export function StagePicker({
       const res = await fetch("/api/status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entryId, status: next }),
+        body: JSON.stringify({ kind, entryId, status: next }),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => null)
@@ -68,13 +71,13 @@ export function StagePicker({
       >
         <StageDot stage={stage} />
         <span className="truncate font-medium">
-          {HIRING_STAGE_LABELS[stage]}
+          {STAGE_LABELS[stage]}
         </span>
       </SelectTrigger>
       <SelectContent>
-        {HIRING_STAGES.map((s) => (
+        {PIPELINES[kind].stages.map((s) => (
           <SelectItem key={s} value={s}>
-            {HIRING_STAGE_LABELS[s]}
+            {STAGE_LABELS[s]}
           </SelectItem>
         ))}
       </SelectContent>

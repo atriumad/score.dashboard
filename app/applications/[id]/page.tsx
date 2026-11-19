@@ -5,7 +5,8 @@ import { requireAuth } from "@/lib/auth"
 import { getEntry } from "@/lib/gravity-forms"
 import { buildCareerApplication } from "@/lib/extract"
 import { getStatuses } from "@/lib/status"
-import type { HiringStage } from "@/lib/stages"
+import type { Stage } from "@/lib/stages"
+import { formIdFor } from "@/lib/forms"
 import { StagePicker } from "@/components/stage-picker"
 import type { CareerApplication } from "@/lib/types"
 import { buttonVariants } from "@/components/ui/button"
@@ -47,7 +48,9 @@ export default async function ApplicationDetailPage({
 
   let application: CareerApplication
   try {
-    const entry = await getEntry(id)
+    const formId = formIdFor("hiring")
+    if (!formId) throw new Error("Falta la variable de entorno GF_FORM_ID")
+    const entry = await getEntry(id, formId)
     application = buildCareerApplication(entry)
   } catch (err) {
     const message = err instanceof Error ? err.message : ""
@@ -58,9 +61,9 @@ export default async function ApplicationDetailPage({
   }
 
   // Same fallback as the list: if Redis is unreachable the page still loads.
-  let stage: HiringStage = "new"
+  let stage: Stage = "new"
   try {
-    stage = (await getStatuses())[id] ?? "new"
+    stage = (await getStatuses("hiring"))[id] ?? "new"
   } catch {
     stage = "new"
   }
@@ -105,7 +108,7 @@ export default async function ApplicationDetailPage({
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             <div className="w-36">
-              <StagePicker entryId={id} value={stage} />
+              <StagePicker kind="hiring" entryId={id} value={stage} />
             </div>
             {application.cvUrl && (
               <a

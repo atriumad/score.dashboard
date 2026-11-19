@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from "next/server"
 import { SESSION_COOKIE, tokenIsValid } from "@/lib/session-sign"
 
-const PROTECTED_PREFIXES = ["/api/applications"]
+const PROTECTED_PREFIXES = [
+  "/api/applications",
+  "/api/status",
+  "/applications",
+  "/events",
+  "/contact",
+  "/newsletter",
+]
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   const needsAuth =
     pathname === "/" ||
-    PROTECTED_PREFIXES.some((p) => pathname.startsWith(p)) ||
-    pathname.startsWith("/applications")
+    PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))
 
   if (!needsAuth) {
     return NextResponse.next()
@@ -35,5 +41,9 @@ export const config = {
     "/",
     "/applications/:path*",
     "/api/applications/:path*",
+    "/api/status/:path*",
+    "/events/:path*",
+    "/contact/:path*",
+    "/newsletter/:path*",
   ],
 }

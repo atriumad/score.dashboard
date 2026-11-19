@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { StagePicker } from "@/components/stage-picker"
 import type { CareerApplication } from "@/lib/types"
-import type { HiringStage } from "@/lib/stages"
+import type { Stage } from "@/lib/stages"
 import { parseGfDate } from "@/lib/dates"
 
 function formatDate(iso: string): string {
@@ -32,8 +32,8 @@ export function ApplicationTable({
   onStageChange,
 }: {
   applications: CareerApplication[]
-  stages: Record<string, HiringStage>
-  onStageChange: (entryId: string, stage: HiringStage) => void
+  stages: Record<string, Stage>
+  onStageChange: (entryId: string, stage: Stage) => void
 }) {
   const router = useRouter()
 
@@ -102,6 +102,7 @@ export function ApplicationTable({
                     onPointerDown={(e) => e.stopPropagation()}
                   >
                     <StagePicker
+                      kind="hiring"
                       entryId={String(app.entry.id)}
                       value={stages[String(app.entry.id)] ?? "new"}
                       onStageChange={(next) =>
