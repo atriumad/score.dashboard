@@ -2,7 +2,8 @@ import { getEntries } from "@/lib/gravity-forms"
 import { requireAuth } from "@/lib/auth"
 import { buildCareerApplication } from "@/lib/extract"
 import { getStatuses } from "@/lib/status"
-import type { ApplicationStatus, CareerApplication } from "@/lib/types"
+import type { CareerApplication } from "@/lib/types"
+import type { HiringStage } from "@/lib/stages"
 import { ApplicationFilters } from "@/components/application-filters"
 import { StatsCards } from "@/components/stats-cards"
 import { Header } from "@/components/header"
@@ -18,7 +19,7 @@ export default async function DashboardPage() {
 
   let error: string | null = null
   let applications: CareerApplication[] = []
-  let statuses: Record<string, ApplicationStatus> = {}
+  let statuses: Record<string, HiringStage> = {}
 
   try {
     const entries = await getEntries()

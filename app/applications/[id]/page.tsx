@@ -4,6 +4,9 @@ import { ArrowLeft, Download, Mail, MailCheck, Phone } from "lucide-react"
 import { requireAuth } from "@/lib/auth"
 import { getEntry } from "@/lib/gravity-forms"
 import { buildCareerApplication } from "@/lib/extract"
+import { getStatuses } from "@/lib/status"
+import type { HiringStage } from "@/lib/stages"
+import { StagePicker } from "@/components/stage-picker"
 import type { CareerApplication } from "@/lib/types"
 import { buttonVariants } from "@/components/ui/button"
 import { parseGfDate } from "@/lib/dates"
@@ -54,6 +57,14 @@ export default async function ApplicationDetailPage({
     redirect("/")
   }
 
+  // Same fallback as the list: if Redis is unreachable the page still loads.
+  let stage: HiringStage = "new"
+  try {
+    stage = (await getStatuses())[id] ?? "new"
+  } catch {
+    stage = "new"
+  }
+
   const mailto = `mailto:${application.email}?subject=${encodeURIComponent(
     "Your application at Score USA"
   )}`
@@ -93,6 +104,9 @@ export default async function ApplicationDetailPage({
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <div className="w-36">
+              <StagePicker entryId={id} value={stage} />
+            </div>
             {application.cvUrl && (
               <a
                 href={application.cvUrl}

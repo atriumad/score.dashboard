@@ -20,10 +20,3 @@ export interface CareerApplication {
   areas: string[]
   cvUrl: string | null
 }
-
-export type ApplicationStatus =
-  | "received"
-  | "new"
-  | "rejected"
-  | "reviewing"
-  | "approved"

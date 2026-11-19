@@ -1,5 +1,6 @@
 import crypto from "node:crypto"
 import type { GFEntry } from "./types"
+import { collectPages } from "./paging"
 
 export interface GFEntryListResponse {
   total_count: number
@@ -10,6 +11,7 @@ const GF_URL = process.env.GF_API_URL
 const GF_KEY = process.env.GF_CONSUMER_KEY
 const GF_SECRET = process.env.GF_CONSUMER_SECRET
 const GF_FORM_ID = process.env.GF_FORM_ID
+const PAGE_SIZE = 200
 
 // RFC 3986 strict percent-encoding (as required by OAuth 1.0a)
 function percentEncode(str: string): string {
@@ -106,20 +108,24 @@ export async function getEntries(): Promise<GFEntry[]> {
     throw new Error("Falta la variable de entorno GF_FORM_ID")
   }
 
-  // _labels=1 and a large page size to fetch all in one request
-  const params = new URLSearchParams()
-  params.set("_labels", "1")
-  params.set("paging[page_size]", "200")
-  // URLSearchParams encodes "[ ]" as %5B %5D which is what OAuth needs
-  const query = params.toString()
+  const formId = GF_FORM_ID
 
-  const res = await gfFetch(`/forms/${GF_FORM_ID}/entries`, query)
-  if (!res.ok) {
-    throw new Error(`Gravity Forms API error: ${res.status}`)
-  }
-
-  const data = (await res.json()) as GFEntryListResponse
-  return Array.isArray(data.entries) ? data.entries : []
+  // The API caps what one request returns, so read every page.
+  return collectPages(async (page) => {
+    const params = new URLSearchParams()
+    params.set("_labels", "1")
+    // Keep the paging keys in alphabetical order: the server signs nested
+    // params in the order they arrive, we sign them sorted, and the two
+    // must agree or the request is rejected with 401.
+    params.set("paging[current_page]", String(page))
+    params.set("paging[page_size]", String(PAGE_SIZE))
+    // URLSearchParams encodes "[ ]" as %5B %5D which is what OAuth needs
+    const res = await gfFetch(`/forms/${formId}/entries`, params.toString())
+    if (!res.ok) {
+      throw new Error(`Gravity Forms API error: ${res.status}`)
+    }
+    return (await res.json()) as GFEntryListResponse
+  }, PAGE_SIZE)
 }
 
 export async function getEntry(id: string): Promise<GFEntry> {

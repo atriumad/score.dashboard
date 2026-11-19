@@ -1,13 +1,6 @@
-import type { ApplicationStatus } from "./types"
+import { normalizeHiringStage, type HiringStage } from "./stages"
 
 const STATUS_KEY = "job_statuses"
-
-export const STATUS_VALUES: ApplicationStatus[] = [
-  "received",
-  "rejected",
-  "reviewing",
-  "approved",
-]
 
 function redisEndpoint(): { url: string; token: string } {
   const url =
@@ -44,21 +37,21 @@ async function redis(command: (string | number)[]): Promise<unknown> {
   return data.result
 }
 
-export async function getStatuses(): Promise<
-  Record<string, ApplicationStatus>
-> {
+// Stored values may predate the stage pipeline; they are translated on read
+// and never rewritten, so nothing saved by the old dashboard is lost.
+export async function getStatuses(): Promise<Record<string, HiringStage>> {
   const result = await redis(["HGETALL", STATUS_KEY])
-  const out: Record<string, ApplicationStatus> = {}
+  const out: Record<string, HiringStage> = {}
   if (result == null) {
     return out
   }
   if (Array.isArray(result)) {
     for (let i = 0; i + 1 < result.length; i += 2) {
-      out[String(result[i])] = result[i + 1] as ApplicationStatus
+      out[String(result[i])] = normalizeHiringStage(String(result[i + 1]))
     }
   } else if (typeof result === "object") {
-    for (const [k, v] of Object.entries(result as Record<string, string>)) {
-      out[k] = v as ApplicationStatus
+    for (const [k, v] of Object.entries(result as Record<string, unknown>)) {
+      out[k] = normalizeHiringStage(typeof v === "string" ? v : null)
     }
   }
   return out
@@ -66,11 +59,7 @@ export async function getStatuses(): Promise<
 
 export async function setStatus(
   entryId: string,
-  status: ApplicationStatus | null
+  stage: HiringStage
 ): Promise<void> {
-  if (status == null) {
-    await redis(["HDEL", STATUS_KEY, entryId])
-  } else {
-    await redis(["HSET", STATUS_KEY, entryId, status])
-  }
+  await redis(["HSET", STATUS_KEY, entryId, stage])
 }

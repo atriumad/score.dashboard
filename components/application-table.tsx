@@ -12,10 +12,10 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { StatusPicker } from "@/components/status-picker"
-import type { ApplicationStatus, CareerApplication } from "@/lib/types"
+import { StagePicker } from "@/components/stage-picker"
+import type { CareerApplication } from "@/lib/types"
+import type { HiringStage } from "@/lib/stages"
 import { parseGfDate } from "@/lib/dates"
-import { deriveDefaultStatus } from "@/lib/status-utils"
 
 function formatDate(iso: string): string {
   const d = parseGfDate(iso)
@@ -28,10 +28,12 @@ function formatDate(iso: string): string {
 
 export function ApplicationTable({
   applications,
-  statuses,
+  stages,
+  onStageChange,
 }: {
   applications: CareerApplication[]
-  statuses: Record<string, ApplicationStatus>
+  stages: Record<string, HiringStage>
+  onStageChange: (entryId: string, stage: HiringStage) => void
 }) {
   const router = useRouter()
 
@@ -46,7 +48,7 @@ export function ApplicationTable({
             <TableHead className="hidden md:table-cell">
               Area of Interest
             </TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>Stage</TableHead>
             <TableHead className="w-12 text-right">View</TableHead>
           </TableRow>
         </TableHeader>
@@ -99,10 +101,12 @@ export function ApplicationTable({
                     onClick={(e) => e.stopPropagation()}
                     onPointerDown={(e) => e.stopPropagation()}
                   >
-                    <StatusPicker
+                    <StagePicker
                       entryId={String(app.entry.id)}
-                      value={statuses[String(app.entry.id)] ?? null}
-                      defaultStatus={deriveDefaultStatus(app.entry.date_created)}
+                      value={stages[String(app.entry.id)] ?? "new"}
+                      onStageChange={(next) =>
+                        onStageChange(String(app.entry.id), next)
+                      }
                     />
                   </div>
                 </TableCell>

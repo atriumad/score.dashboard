@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { isAuthenticated } from "@/lib/auth"
-import { getStatuses, setStatus, STATUS_VALUES } from "@/lib/status"
-import type { ApplicationStatus } from "@/lib/types"
+import { getStatuses, setStatus } from "@/lib/status"
+import { isHiringStage } from "@/lib/stages"
 
 async function unauthorized() {
   return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -35,21 +35,17 @@ export async function POST(req: Request) {
   }
 
   const entryId = body.entryId
-  const status = body.status === "" ? null : body.status
+  const status = body.status
 
   if (typeof entryId !== "string" || /^\d+$/.test(entryId) === false) {
     return NextResponse.json({ error: "Invalid entry id" }, { status: 400 })
   }
-  if (
-    status !== null &&
-    (typeof status !== "string" ||
-      !STATUS_VALUES.includes(status as ApplicationStatus))
-  ) {
+  if (!isHiringStage(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 })
   }
 
   try {
-    await setStatus(entryId, status as ApplicationStatus | null)
+    await setStatus(entryId, status)
     return NextResponse.json({ ok: true })
   } catch (err) {
     return NextResponse.json(
