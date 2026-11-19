@@ -103,7 +103,11 @@ export function ApplicationFilters({
           }}
         >
           <SelectTrigger className="w-full sm:w-56">
-            <SelectValue placeholder="All areas" />
+            <SelectValue placeholder="All areas">
+                {(value: string | null) =>
+                  !value || value === "all" ? "All areas" : value
+                }
+              </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All areas</SelectItem>

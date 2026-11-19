@@ -146,7 +146,11 @@ export function EventBoard({
             }}
           >
             <SelectTrigger className="w-full sm:w-56" aria-label="Event type">
-              <SelectValue placeholder="All event types" />
+              <SelectValue placeholder="All event types">
+                {(value: string | null) =>
+                  !value || value === "all" ? "All event types" : value
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All event types</SelectItem>
