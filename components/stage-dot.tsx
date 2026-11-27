@@ -1,7 +1,7 @@
 import type { Stage } from "@/lib/stages"
 import { cn } from "cn"
 
-const DOT_CLASSES: Record<Stage, string> = {
+export const DOT_CLASSES: Record<Stage, string> = {
   new: "bg-gold",
   reviewing: "bg-amber-500",
   interview: "bg-sky-500",

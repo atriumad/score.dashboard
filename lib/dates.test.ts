@@ -1,5 +1,10 @@
 import { expect, test } from "bun:test"
-import { isWithinDays, parseEventDate } from "./dates"
+import { isWithinDays, parseEventDate, parseGfDate } from "./dates"
+
+test("entry dates from Gravity Forms are UTC", () => {
+  expect(parseGfDate("2026-11-27 16:41:05").toISOString()).toBe("2026-11-27T16:41:05.000Z")
+  expect(parseGfDate("2026-11-27 16:41").toISOString()).toBe("2026-11-27T16:41:00.000Z")
+})
 
 const now = new Date(2026, 10, 19, 15, 30) // Nov 19 2026, afternoon
 

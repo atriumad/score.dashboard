@@ -9,6 +9,7 @@ import {
   SelectTrigger,
 } from "@/components/ui/select"
 import { StageDot } from "@/components/stage-dot"
+import { saveStage } from "@/lib/save-stage"
 import {
   PIPELINES,
   STAGE_LABELS,
@@ -43,23 +44,12 @@ export function StagePicker({
 
     apply(next)
     setSaving(true)
-    try {
-      const res = await fetch("/api/status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kind, entryId, status: next }),
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => null)
-        toast.error(data?.error ?? "Could not update stage")
-        apply(previous)
-      }
-    } catch {
-      toast.error("Connection error")
+    const error = await saveStage(kind, entryId, next)
+    if (error) {
+      toast.error(error)
       apply(previous)
-    } finally {
-      setSaving(false)
     }
+    setSaving(false)
   }
 
   return (

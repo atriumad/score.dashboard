@@ -1,0 +1,49 @@
+# Score USA applications dashboard (moved from Vercel on 27 Nov 2026).
+# scoreapp: the Next.js dashboard, reached by Caddy as scoreapp:3000 on deploy_default.
+# scoreredis: where hiring and event stages are saved (hashes job_statuses, event_statuses), kept on disk.
+# scorekv: speaks the Upstash REST format so the code works unchanged; internal only.
+# Never name a service app or db here: deploy_default is shared with Atrium.
+name: scoredashboard
+services:
+  scoreapp:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      UPSTASH_REDIS_REST_URL: http://scorekv:80
+    depends_on:
+      - scorekv
+    networks:
+      - internal
+      - deploy_default
+
+  scoreredis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec", "--save", "300", "1"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
+
+  scorekv:
+    image: hiett/serverless-redis-http:0.0.10
+    restart: unless-stopped
+    environment:
+      SRH_MODE: env
+      SRH_TOKEN: ${UPSTASH_REDIS_REST_TOKEN}
+      SRH_CONNECTION_STRING: redis://scoreredis:6379
+    depends_on:
+      - scoreredis
+    networks:
+      - internal
+
+volumes:
+  redis_data:
+
+networks:
+  internal:
+  deploy_default:
+    external: true

@@ -3,10 +3,12 @@ import { notFound, redirect } from "next/navigation"
 import { ArrowLeft, Mail, MailCheck, Phone } from "lucide-react"
 import { requireAuth } from "@/lib/auth"
 import { getEntry } from "@/lib/gravity-forms"
-import { buildEventRequest } from "@/lib/extract"
+import { routeFor, type Route } from "@/lib/classify"
+import { buildContactMessage, buildEventRequest, contactAsEventRequest } from "@/lib/extract"
+import { MoveButton } from "@/components/move-button"
 import { formIdFor } from "@/lib/forms"
 import { formatEventDate, formatReceived } from "@/lib/format"
-import { getStatuses } from "@/lib/status"
+import { getRoutes, getStatuses } from "@/lib/status"
 import type { Stage } from "@/lib/stages"
 import type { EventRequest } from "@/lib/types"
 import { buttonVariants } from "@/components/ui/button"
@@ -42,24 +44,37 @@ export default async function EventDetailPage({
     notFound()
   }
 
-  let request: EventRequest
+  // An event lead is an Event Request form entry, or a contact form message
+  // that is an event inquiry (entry ids are unique across forms).
+  let request: EventRequest | null = null
   try {
     request = buildEventRequest(await getEntry(id, formId))
   } catch (err) {
     const message = err instanceof Error ? err.message : ""
-    if (message.includes("404")) {
-      notFound()
-    }
-    redirect("/events")
+    if (!message.includes("404")) redirect("/events")
   }
+  const contactFormId = formIdFor("contact")
+  if (!request && contactFormId) {
+    try {
+      request = contactAsEventRequest(buildContactMessage(await getEntry(id, contactFormId)))
+    } catch (err) {
+      const message = err instanceof Error ? err.message : ""
+      if (!message.includes("404")) redirect("/events")
+    }
+  }
+  if (!request) notFound()
 
   // Same fallback as the list: if Redis is unreachable the page still loads.
   let stage: Stage = "new"
+  let savedRoute: Route | undefined
   try {
     stage = (await getStatuses("events"))[id] ?? "new"
+    savedRoute = (await getRoutes())[id]
   } catch {
     stage = "new"
   }
+  const fromContact = request.source === "contact"
+  const inEvents = !fromContact || routeFor(request.details, savedRoute) === "events"
 
   const mailto = `mailto:${request.email}?subject=${encodeURIComponent(
     "Your event at Score Entertainment"
@@ -77,16 +92,17 @@ export default async function EventDetailPage({
           )}
         >
           <ArrowLeft className="size-3.5" />
-          All event requests
+          All event leads
         </Link>
 
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold tracking-tight">
-              {request.name || "Event request"}
+              {request.name || request.email || "Event lead"}
             </h1>
             <p className="text-muted-foreground">
               Received {formatReceived(request.entry.date_created)}
+              {fromContact ? " · through the contact form" : ""}
               {request.company ? ` · ${request.company}` : ""}
             </p>
           </div>
@@ -94,6 +110,13 @@ export default async function EventDetailPage({
             <div className="w-36">
               <StagePicker kind="events" entryId={id} value={stage} />
             </div>
+            {fromContact && (
+              <MoveButton
+                entryId={id}
+                to={inEvents ? "contact" : "events"}
+                afterMove={inEvents ? "/contact" : undefined}
+              />
+            )}
             {request.email && (
               <>
                 <a
@@ -115,13 +138,20 @@ export default async function EventDetailPage({
               <CardTitle className="text-base">Event</CardTitle>
             </CardHeader>
             <CardContent>
-              <dl className="space-y-2 text-sm">
-                <Row label="Type" value={request.eventType} />
-                <Row label="Date" value={formatEventDate(request.eventDate)} />
-                <Row label="Time" value={request.eventTime} />
-                <Row label="Guests" value={request.guests} />
-                <Row label="Package" value={request.packageName} />
-              </dl>
+              {fromContact ? (
+                <p className="text-sm text-muted-foreground">
+                  Sent through the contact form, which has no event fields. The
+                  date, group size and type are in the message below.
+                </p>
+              ) : (
+                <dl className="space-y-2 text-sm">
+                  <Row label="Type" value={request.eventType} />
+                  <Row label="Date" value={formatEventDate(request.eventDate)} />
+                  <Row label="Time" value={request.eventTime} />
+                  <Row label="Guests" value={request.guests} />
+                  <Row label="Package" value={request.packageName} />
+                </dl>
+              )}
             </CardContent>
           </Card>
 
@@ -155,7 +185,7 @@ export default async function EventDetailPage({
           {request.details && (
             <Card className="sm:col-span-2">
               <CardHeader>
-                <CardTitle className="text-base">Details</CardTitle>
+                <CardTitle className="text-base">{fromContact ? "Message" : "Details"}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="max-w-[75ch] text-sm whitespace-pre-wrap">

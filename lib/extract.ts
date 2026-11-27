@@ -114,6 +114,25 @@ export function buildEventRequest(entry: GFEntry): EventRequest {
     guests: Number.isFinite(guests) ? guests : null,
     packageName: fieldValue(entry, "9"),
     details: fieldValue(entry, "10"),
+    source: "form",
+  }
+}
+
+/** A contact form message that is an event inquiry, shown as an event request. */
+export function contactAsEventRequest(m: ContactMessage): EventRequest {
+  return {
+    entry: m.entry,
+    name: m.name,
+    email: m.email,
+    phone: m.phone,
+    company: "",
+    eventType: "",
+    eventDate: "",
+    eventTime: "",
+    guests: null,
+    packageName: "",
+    details: m.message,
+    source: "contact",
   }
 }
 

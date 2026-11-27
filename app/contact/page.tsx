@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation"
 import { requireAuth } from "@/lib/auth"
-import { buildContactMessage } from "@/lib/extract"
-import { loadSection } from "@/lib/sections"
+import { loadInquiries } from "@/lib/inquiries"
 import { ContactList } from "@/components/contact-list"
 import { SectionShell } from "@/components/section-shell"
 
@@ -12,11 +11,14 @@ export default async function ContactPage() {
     redirect("/login")
   }
 
-  const { entries, error } = await loadSection("contact")
+  const { contact, events, contactError } = await loadInquiries()
 
   return (
-    <SectionShell title="Contact messages" count={entries.length} error={error}>
-      <ContactList messages={entries.map(buildContactMessage)} />
+    <SectionShell title="Contact messages" count={contact.length} error={contactError}>
+      <ContactList
+        messages={contact}
+        movedToEvents={events.filter((e) => e.source === "contact").length}
+      />
     </SectionShell>
   )
 }

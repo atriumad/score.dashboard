@@ -3,13 +3,6 @@
 
 export type SectionKey = "hiring" | "events" | "contact" | "newsletter"
 
-export const SECTIONS: { key: SectionKey; label: string; href: string }[] = [
-  { key: "hiring", label: "Hiring", href: "/" },
-  { key: "events", label: "Events", href: "/events" },
-  { key: "contact", label: "Contact", href: "/contact" },
-  { key: "newsletter", label: "Newsletter", href: "/newsletter" },
-]
-
 export function formIdFor(section: SectionKey): string | null {
   const id = {
     hiring: process.env.GF_FORM_ID,

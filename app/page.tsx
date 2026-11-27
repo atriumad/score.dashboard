@@ -1,67 +1,73 @@
-import { getEntries } from "@/lib/gravity-forms"
+import { redirect } from "next/navigation"
 import { requireAuth } from "@/lib/auth"
 import { buildCareerApplication } from "@/lib/extract"
+import { loadInquiries } from "@/lib/inquiries"
+import { loadSection } from "@/lib/sections"
 import { getStatuses } from "@/lib/status"
-import type { CareerApplication } from "@/lib/types"
 import type { Stage } from "@/lib/stages"
-import { formIdFor } from "@/lib/forms"
-import { ApplicationFilters } from "@/components/application-filters"
-import { StatsCards } from "@/components/stats-cards"
+import type { OverviewData } from "@/lib/rows"
 import { Header } from "@/components/header"
-import { redirect } from "next/navigation"
+import { Overview } from "@/components/overview"
 
 export const dynamic = "force-dynamic"
 
-export default async function DashboardPage() {
-  const authed = await requireAuth()
-  if (!authed) {
+export default async function OverviewPage() {
+  if (!(await requireAuth())) {
     redirect("/login")
   }
 
-  let error: string | null = null
-  let applications: CareerApplication[] = []
-  let statuses: Record<string, Stage> = {}
+  const [hiring, newsletter, inquiries, hiringStages] = await Promise.all([
+    loadSection("hiring"),
+    loadSection("newsletter"),
+    loadInquiries(),
+    getStatuses("hiring").catch((): Record<string, Stage> => ({})),
+  ])
 
-  try {
-    const formId = formIdFor("hiring")
-    if (!formId) throw new Error("Falta la variable de entorno GF_FORM_ID")
-    const entries = await getEntries(formId)
-    applications = entries.map(buildCareerApplication)
-  } catch (err) {
-    error = err instanceof Error ? err.message : "Failed to load applications"
+  const errors: OverviewData["errors"] = []
+  for (const [section, message] of [
+    ["Hiring", hiring.error],
+    ["Event leads", inquiries.eventsError],
+    ["Contact", inquiries.contactError],
+    ["Newsletter", newsletter.error],
+  ] as const) {
+    if (message) errors.push({ section, message })
   }
 
-  try {
-    statuses = await getStatuses("hiring")
-  } catch {
-    statuses = {}
+  const data: OverviewData = {
+    hiring: hiring.entries.map((e) => {
+      const a = buildCareerApplication(e)
+      const id = String(e.id)
+      return { id, received: e.date_created, stage: hiringStages[id] ?? "new", name: a.name, areas: a.areas }
+    }),
+    events: inquiries.events.map((r) => {
+      const id = String(r.entry.id)
+      return {
+        id,
+        received: r.entry.date_created,
+        stage: inquiries.eventStages[id] ?? "new",
+        name: r.name,
+        eventDate: r.eventDate,
+        eventType: r.eventType,
+        guests: r.guests,
+        packageName: r.packageName,
+        source: r.source,
+      }
+    }),
+    contact: inquiries.contact.map((m) => ({
+      id: String(m.entry.id),
+      received: m.entry.date_created,
+      name: m.name,
+    })),
+    newsletter: newsletter.entries.map((e) => ({ id: String(e.id), received: e.date_created })),
+    errors,
+    eventsConfigured: inquiries.eventsConfigured,
   }
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
-        {error ? (
-          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-            {error}
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="flex items-baseline justify-between gap-4">
-              <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                Applications dashboard
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {applications.length} total
-              </p>
-            </div>
-            <StatsCards applications={applications} />
-            <ApplicationFilters
-              applications={applications}
-              statuses={statuses}
-            />
-          </div>
-        )}
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">
+        <Overview data={data} />
       </main>
     </div>
   )

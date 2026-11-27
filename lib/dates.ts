@@ -1,3 +1,7 @@
+/**
+ * Gravity Forms' date_created ("2026-11-27 16:41:05") is in UTC. Read it as
+ * UTC so it shows in the viewer's own time and today's entries count as today.
+ */
 export function parseGfDate(value: string): Date {
   const m =
     /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/.exec(value)
@@ -5,12 +9,14 @@ export function parseGfDate(value: string): Date {
     return new Date(value)
   }
   return new Date(
-    Number(m[1]),
-    Number(m[2]) - 1,
-    Number(m[3]),
-    Number(m[4]),
-    Number(m[5]),
-    m[6] ? Number(m[6]) : 0
+    Date.UTC(
+      Number(m[1]),
+      Number(m[2]) - 1,
+      Number(m[3]),
+      Number(m[4]),
+      Number(m[5]),
+      m[6] ? Number(m[6]) : 0
+    )
   )
 }
 /**

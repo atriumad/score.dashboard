@@ -4,6 +4,7 @@ import { SESSION_COOKIE, tokenIsValid } from "@/lib/session-sign"
 const PROTECTED_PREFIXES = [
   "/api/applications",
   "/api/status",
+  "/api/routes",
   "/applications",
   "/events",
   "/contact",
@@ -42,6 +43,7 @@ export const config = {
     "/applications/:path*",
     "/api/applications/:path*",
     "/api/status/:path*",
+    "/api/routes/:path*",
     "/events/:path*",
     "/contact/:path*",
     "/newsletter/:path*",

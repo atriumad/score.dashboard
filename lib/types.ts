@@ -33,6 +33,9 @@ export interface EventRequest {
   guests: number | null
   packageName: string
   details: string
+  // "form": the Event Request form. "contact": an event inquiry sent through
+  // the contact form (no date, type or guests; the message says it all).
+  source: "form" | "contact"
 }
 
 export interface ContactMessage {

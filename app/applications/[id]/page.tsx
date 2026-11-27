@@ -81,7 +81,7 @@ export default async function ApplicationDetailPage({
           </span>
           <span className="h-5 w-px shrink-0 bg-white/25" aria-hidden />
           <Link
-            href="/"
+            href="/applications"
             className={cn(
               buttonVariants({ variant: "ghost", size: "sm" }),
               "text-white/85 hover:bg-white/10 hover:text-white"

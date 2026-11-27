@@ -24,7 +24,10 @@ export function StageSummary({
     <div
       role="group"
       aria-label="Filter by stage"
-      className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6"
+      className={cn(
+        "grid grid-cols-2 gap-2 sm:grid-cols-3",
+        PIPELINES[kind].stages.length === 5 ? "lg:grid-cols-5" : "lg:grid-cols-6"
+      )}
     >
       {PIPELINES[kind].stages.map((stage) => {
         const selected = active === stage

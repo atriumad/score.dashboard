@@ -21,7 +21,10 @@ export const EVENT_STAGES = [
 export type HiringStage = (typeof HIRING_STAGES)[number]
 export type EventStage = (typeof EVENT_STAGES)[number]
 export type Stage = HiringStage | EventStage
+// Event inquiries sent through the contact form are worked in "events" too.
 export type PipelineKind = "hiring" | "events"
+
+export const PIPELINE_KINDS: readonly PipelineKind[] = ["hiring", "events"]
 
 export const STAGE_LABELS: Record<Stage, string> = {
   new: "New",
@@ -35,6 +38,12 @@ export const STAGE_LABELS: Record<Stage, string> = {
   confirmed: "Confirmed",
   completed: "Completed",
   lost: "Lost",
+}
+
+// Stages that end a pipeline well, used for conversion rates.
+export const WON_STAGES: Record<PipelineKind, readonly Stage[]> = {
+  hiring: ["hired"],
+  events: ["confirmed", "completed"],
 }
 
 interface Pipeline {
@@ -53,7 +62,7 @@ export const PIPELINES: Record<PipelineKind, Pipeline> = {
 }
 
 export function isPipelineKind(value: unknown): value is PipelineKind {
-  return value === "hiring" || value === "events"
+  return (PIPELINE_KINDS as readonly unknown[]).includes(value)
 }
 
 export function isStage(kind: PipelineKind, value: unknown): value is Stage {

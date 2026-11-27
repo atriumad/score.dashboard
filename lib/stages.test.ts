@@ -71,5 +71,6 @@ test("isStage rejects legacy and non-strings", () => {
 test("isPipelineKind", () => {
   expect(isPipelineKind("events")).toBe(true)
   expect(isPipelineKind("contact")).toBe(false)
+  expect(isPipelineKind("newsletter")).toBe(false)
   expect(isPipelineKind(undefined)).toBe(false)
 })
